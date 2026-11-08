@@ -36,6 +36,19 @@ properties:
     type: boolean
     description: "Whether content should track finger movement when scrolling on the y axis."
 
+  zoom:
+    type: boolean
+    description: |
+      Register pinch to zoom gestures. Each zoom step is reported as a tap of INPUT_BTN_5
+      (zoom in, fingers moving apart) or INPUT_BTN_6 (zoom out, fingers moving together).
+      Map them to behaviors (e.g. &kp LC(EQUAL) / &kp LC(MINUS)) with a
+      "zmk,input-processor-behaviors" node on the input listener.
+
+  zoom-divisor:
+    type: int
+    description: "Pinch distance (in pixels) per zoom step. Higher values zoom more slowly."
+    default: 100
+
   switch-xy:
     type: boolean
     description: "Flip x and y axes"

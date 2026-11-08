@@ -96,6 +96,10 @@
 #define LEFT_BUTTON_CODE INPUT_BTN_0
 #define RIGHT_BUTTON_CODE INPUT_BTN_0 + 1
 #define MIDDLE_BUTTON_CODE INPUT_BTN_0 + 2
+// Zoom steps are reported as taps of buttons that aren't mouse buttons in ZMK,
+// so they can be mapped to behaviors with a zmk,input-processor-behaviors node.
+#define ZOOM_IN_CODE INPUT_BTN_5
+#define ZOOM_OUT_CODE INPUT_BTN_6
 
 // These 2 registers have the same bit map.
 // The first one configures the gestures,
@@ -129,6 +133,10 @@ struct iqs5xx_config {
     bool natural_scroll_x;
     bool natural_scroll_y;
 
+    // Zoom configuration.
+    bool zoom;
+    uint16_t zoom_divisor;
+
     // Axes configuration.
     bool switch_xy;
     bool flip_x;
@@ -152,4 +160,6 @@ struct iqs5xx_data {
     // Scroll accumulators.
     int16_t scroll_x_acc;
     int16_t scroll_y_acc;
+    // Zoom accumulator.
+    int16_t zoom_acc;
 };
