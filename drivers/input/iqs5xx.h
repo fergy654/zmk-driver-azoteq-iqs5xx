@@ -84,6 +84,8 @@
 // Hold time + tap time is used as
 // a threshold for the press and
 // hold gesture.
+#define IQS5XX_TAP_TIME 0x06B9     // 2 bytes.
+#define IQS5XX_TAP_DISTANCE 0x06BB // 2 bytes.
 #define IQS5XX_HOLD_TIME 0x06BD
 // TODO: Make hold time configurable with KConfig.
 

@@ -112,6 +112,12 @@ static void iqs5xx_work_handler(struct k_work *work) {
         goto end_comm;
     }
 
+    // Scroll is reported every cycle while scrolling, so leave it out to keep the log readable.
+    if (gesture_events_0 != 0 || (gesture_events_1 & ~IQS5XX_SCROLL) != 0) {
+        LOG_DBG("Gesture events: sys_info 0x%02x 0x%02x, gestures 0x%02x 0x%02x", sys_info_0,
+                sys_info_1, gesture_events_0, gesture_events_1);
+    }
+
     // Handle reset indication.
     //
     // A reset (watchdog, ESD, brownout) restores the non-volatile defaults, so
@@ -323,6 +329,22 @@ static int iqs5xx_setup_device(const struct device *dev) {
         LOG_ERR("Failed to configure axes: %d", ret);
         return ret;
     }
+
+    // Read back the gesture configuration to confirm the device accepted it.
+    // Failures here are only logged, they don't abort setup.
+    uint8_t single_conf = 0, multi_conf = 0, xy_conf = 0, sys_conf_1 = 0;
+    uint16_t tap_time = 0, tap_distance = 0, hold_time = 0;
+    iqs5xx_read_reg8(dev, IQS5XX_SINGLE_FINGER_GESTURES_CONF, &single_conf);
+    iqs5xx_read_reg8(dev, IQS5XX_MULTI_FINGER_GESTURES_CONF, &multi_conf);
+    iqs5xx_read_reg8(dev, IQS5XX_XY_CONFIG_0, &xy_conf);
+    iqs5xx_read_reg8(dev, IQS5XX_SYSTEM_CONFIG_1, &sys_conf_1);
+    iqs5xx_read_reg16(dev, IQS5XX_TAP_TIME, &tap_time);
+    iqs5xx_read_reg16(dev, IQS5XX_TAP_DISTANCE, &tap_distance);
+    iqs5xx_read_reg16(dev, IQS5XX_HOLD_TIME, &hold_time);
+    LOG_DBG("Readback: single 0x%02x, multi 0x%02x, xy 0x%02x, sys_config_1 0x%02x", single_conf,
+            multi_conf, xy_conf, sys_conf_1);
+    LOG_DBG("Readback: tap time %u ms, tap distance %u px, hold time %u ms", tap_time,
+            tap_distance, hold_time);
 
     // Configure system settings.
     ret = iqs5xx_write_reg8(dev, IQS5XX_SYSTEM_CONFIG_0, IQS5XX_SETUP_COMPLETE | IQS5XX_WDT);
