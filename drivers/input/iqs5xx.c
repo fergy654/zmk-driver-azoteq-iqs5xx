@@ -78,6 +78,8 @@ static void iqs5xx_button_release_work_handler(struct k_work *work) {
     }
 }
 
+static int iqs5xx_setup_device(const struct device *dev);
+
 static void iqs5xx_work_handler(struct k_work *work) {
     struct iqs5xx_data *data = CONTAINER_OF(work, struct iqs5xx_data, work);
     const struct device *dev = data->dev;
@@ -111,11 +113,18 @@ static void iqs5xx_work_handler(struct k_work *work) {
     }
 
     // Handle reset indication.
+    //
+    // A reset (watchdog, ESD, brownout) restores the non-volatile defaults, so
+    // the configuration has to be written again. Setup acknowledges the reset
+    // and ends the communication window itself.
     if (sys_info_0 & IQS5XX_SHOW_RESET) {
-        LOG_INF("Device reset detected");
-        // Acknowledge reset.
-        iqs5xx_write_reg8(dev, IQS5XX_SYSTEM_CONTROL_0, IQS5XX_ACK_RESET);
-        goto end_comm;
+        LOG_WRN("Device reset detected, reapplying configuration");
+        ret = iqs5xx_setup_device(dev);
+        if (ret < 0) {
+            LOG_ERR("Failed to reapply configuration after reset: %d", ret);
+            goto end_comm;
+        }
+        return;
     }
 
     bool tp_movement = (sys_info_1 & IQS5XX_TP_MOVEMENT) != 0;
@@ -236,6 +245,13 @@ static void iqs5xx_rdy_handler(const struct device *port, struct gpio_callback *
 static int iqs5xx_setup_device(const struct device *dev) {
     const struct iqs5xx_config *config = dev->config;
     int ret;
+
+    // Acknowledge any pending reset so it isn't handled again once events start.
+    ret = iqs5xx_write_reg8(dev, IQS5XX_SYSTEM_CONTROL_0, IQS5XX_ACK_RESET);
+    if (ret < 0) {
+        LOG_ERR("Failed to acknowledge reset: %d", ret);
+        return ret;
+    }
 
     // Enable event mode and trackpad events.
     ret = iqs5xx_write_reg8(dev, IQS5XX_SYSTEM_CONFIG_1,
